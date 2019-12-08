@@ -9,7 +9,7 @@ class UseOpenAlpr:
     def __init__(self, localization = "eu", configurationFile = "openalpr.conf", maxRecognitionAttempts = 1):
         # loads alpr configuration files
         self.alpr = openalpr.Alpr(localization, configurationFile, "runtime_data")
-        aelf.alpr.set_top_n(maxRecognitionAttempts)
+        self.alpr.set_top_n(maxRecognitionAttempts)
 
         
     def unload(self):
