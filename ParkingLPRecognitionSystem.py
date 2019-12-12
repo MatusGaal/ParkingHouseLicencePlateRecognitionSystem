@@ -9,8 +9,7 @@ import LPVerifier
 
 class ParkingLPRecognitionSystem:
 
-    def __init__(self, entranceCameraNumber, exitCameraNumber, localization = "eu", configurationFile = "openalpr.conf", maxRecognitionAttempts = 1, delay = 0.5):
-        self.delay = delay
+    def __init__(self, entranceCameraNumber, exitCameraNumber, localization = "eu", configurationFile = "openalpr.conf", maxRecognitionAttempts = 1):
         self.entranceFramePath = "entranceFrame.jpg"
         self.exitFramePath = "exitFrame.jpg"
         self.currentEntrancePlate = ""
@@ -61,15 +60,14 @@ class ParkingLPRecognitionSystem:
             return
 
         self.currentEntrancePlate = plate
-        #print("\n\nEntrancePlate:" + plate + "\n\n")
         try:
             if self.vehicleDatabase.vehicleIsPresent(plate):
                 # here cen be added some form of reaction to entering another vehicle with the same licence plate
-                #print("This vehicle (licence plate:" + plate + ") is already presen!")
+                print("This vehicle (licence plate:" + plate + ") is already presen!")
                 return
             self.vehicleDatabase.addVehicle(plate, time.time())
         except sqlite3.IntegrityError as e:
-            #print("Entering vehicle with licence Plate: " + plate + " is already in the parking house!")
+            print("Databaze integrity error while trying to add plate: " + plate)
 
     def handleExitFrame(self, frame):
         '''
@@ -83,9 +81,8 @@ class ParkingLPRecognitionSystem:
             return
 
         self.currentExitPlate = plate
-        #print("\n\nExitPlate:" + plate + "\n\n")
         if not self.vehicleDatabase.vehicleIsPresent(plate):
-            #print("Vehicle (licence plate:" + plate + ") is leaving but never entered!")
+            print("Vehicle (licence plate:" + plate + ") is leaving but never entered!")
             return
         self.vehicleDatabase.updateDepartureTime(time.time(), plate)
 
@@ -93,6 +90,8 @@ class ParkingLPRecognitionSystem:
         '''
         main loop nahdling recognition from given cameras
         '''
+        i = 0
+        self.timer = time.time()
         if not self.entranceCamera.isOpened():
             self.entranceCamera.open(self.entranceCameraNumber)
         if not self.exitCamera.isOpened():
@@ -102,9 +101,9 @@ class ParkingLPRecognitionSystem:
             ret, entranceFrame = self.entranceCamera.read()
             ret1, exitFrame = self.exitCamera.read()
 
-            #if not ret1 or not ret:
-                #print("\n\n\n!!!!end of the line!!!!\n\n\n")
-                #break
+            if not ret1 or not ret:
+                print("\n\n\n!!!!didn't get input frame!!!!\n\n\n")
+                return
 
             entranceThread = threading.Thread(target=self.handleEntranceFrame, args=(entranceFrame,), daemon = True)
             exitThread = threading.Thread(target=self.handleExitFrame, args=(exitFrame,), daemon = True)
@@ -112,7 +111,7 @@ class ParkingLPRecognitionSystem:
             entranceThread.start()
             exitThread.start()
 
-            time.sleep(self.delay)
+            time.sleep(0.4)
 
     def Run(self):
         '''
